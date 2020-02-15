@@ -187,14 +187,23 @@ class Room extends React.Component{
     burn = (e)=>{
         if(this.state.firstRound){
             if(this.state.draw && this.state.cardflipped){
-                this.setState({
-                    activeSocket: '',
-                    drawTurn: false,
-                    Drawclicked: 1,
-                    draw: false,
-                    selected: ''
-                });
-                socket.socketClient().emit('nextTurn', e.target.id);
+                if(this.state.endgame){
+                    this.setState({
+                        selected: '',
+                        drawTurn: false,
+                        Drawclicked: 1,
+                        draw: false
+                    });
+                }else{
+                    this.setState({
+                        activeSocket: '',
+                        drawTurn: false,
+                        Drawclicked: 1,
+                        draw: false,
+                        selected: ''
+                    });
+                    socket.socketClient().emit('nextTurn', e.target.id);
+                }
             }
         }else{
             if(this.state.draw && !this.state.endgame){

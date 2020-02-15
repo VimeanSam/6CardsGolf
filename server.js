@@ -2,19 +2,19 @@ const express = require('express');
 const app = express();
 var http = require('http').Server(app);
 const bodyParser = require('body-parser');
-const dbConnection = require('../db');
-const passport = require('../passportConfig');
+const dbConnection = require('./db');
+const passport = require('./passportConfig');
 const PORT = process.env.PORT || 3001;
 const { MongoClient } = require('mongodb');
-const config = require('../config/config');
+const config = require('./config/config');
 const url = process.env.MONGODB_URI || `${config.host}`;
 const client = new MongoClient(url);
 const io = require("socket.io")(http);
-const socketHandler = require('../sockets/socketHandler');
-const mongoData = require('../db/MongoData');
+const socketHandler = require('./sockets/socketHandler');
+const mongoData = require('./db/MongoData');
 const path = require('path');
-const user = require('../routes/user');
-const cardTheme = require('../routes/theme');
+const user = require('./routes/user');
+const cardTheme = require('./routes/theme');
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
