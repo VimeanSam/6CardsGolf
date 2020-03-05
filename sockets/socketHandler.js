@@ -1,4 +1,4 @@
-const database = require('../db/database');
+const database = require('../controller/database');
 var sessions = database.getGameSessions();
 var players = database.getPlayers();
 var game = require('../gameLogic/game');
