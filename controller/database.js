@@ -14,7 +14,7 @@ module.exports.updateRoom = (id, len, io) => {
     if(RoomLists[id]){
         RoomLists[id].occupancy = len;
     }else{
-        mongoData.clearOut(io);
+        mongoData.clearOut(id, io);
     }
     //base case: a room must have at least 1 occupant in order for others to join
     var target = {roomid: parseInt(id)};
@@ -24,6 +24,9 @@ module.exports.updateRoom = (id, len, io) => {
 module.exports.deleteRoom = (id, io) => {
     var target = {roomid: parseInt(id)};
     mongoData.deleteRoom(target, io);
+}
+module.exports.clearRoomID = (id, io) => {
+    mongoData.clearOut(id, io);
 }
 module.exports.insertPlayer = (id, socketID, name, io) => {
     const pack = game.shufflePack(gameRooms[id].deck.slice());
@@ -101,4 +104,7 @@ module.exports.getGameSessions = () => {
 }
 module.exports.getPlayers = () => {
     return players;
+}
+module.exports.getRooms = () => {
+    return RoomLists;
 }

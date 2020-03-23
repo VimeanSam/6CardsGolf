@@ -102,8 +102,13 @@ class Room extends React.Component{
                     tracker: ''
                 });
             });
-            socket.socketClient().on('clearID', () =>{
-                sessionStorage.removeItem('roomID');
+            socket.socketClient().on('clearID', (id) =>{
+                var roomID = sessionStorage.getItem('roomID');
+                if(roomID === id){
+                    alert('remove '+id);
+                    sessionStorage.removeItem('roomID');
+                    window.location.href='/lobby';
+                }
             })
         }  
         this.scrollToBottom();

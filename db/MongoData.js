@@ -115,7 +115,7 @@ client.connect(function (err){
             io.sockets.emit('rankings', result);
         });
     }
-    module.exports.clearOut = (io) => {
-        io.sockets.emit('clearID');
+    module.exports.clearOut = (id, io) => {
+        io.sockets.emit('clearID', id);
     }
 });

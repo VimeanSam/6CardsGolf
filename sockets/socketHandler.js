@@ -38,12 +38,17 @@ module.exports.playerJoined = (socket, io) =>{
             }
         }
         if(!duplicate){
-            database.insertGame(id);
-            database.insertPlayer(id, socket.id, name, io);
-            socket.join(id.toString());
-            database.updateRoom(parseInt(id), io.nsps['/'].adapter.rooms[id.toString()].length, io);
-            io.in(id.toString()).emit('updateDeck', sessions[id].deck);
-            io.in(id.toString()).emit('messages', sessions[id].messages);
+            if(database.getRooms()[id]){
+                database.insertGame(id);
+                database.insertPlayer(id, socket.id, name, io);
+                socket.join(id.toString());
+                database.updateRoom(parseInt(id), io.nsps['/'].adapter.rooms[id.toString()].length, io);
+                io.in(id.toString()).emit('updateDeck', sessions[id].deck);
+                io.in(id.toString()).emit('messages', sessions[id].messages);
+            }else{
+                console.log('HERE');
+                database.clearRoomID(id, io);
+            }
         }
     });
 }
