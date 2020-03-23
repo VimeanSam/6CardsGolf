@@ -1,6 +1,7 @@
 import React from 'react';
 import '../App.css';
 import socket from '../socketControl/socketClient';
+import {Redirect} from 'react-router-dom';
 const axios = require('axios');
 
 class Room extends React.Component{
@@ -101,6 +102,9 @@ class Room extends React.Component{
                     tracker: ''
                 });
             });
+            socket.socketClient().on('clearID', () =>{
+                sessionStorage.removeItem('roomID');
+            })
         }  
         this.scrollToBottom();
     }
@@ -114,7 +118,10 @@ class Room extends React.Component{
     } 
 
     scrollToBottom = () => {
-        this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+        var roomID = sessionStorage.getItem('roomID');
+        if(roomID){
+            this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+        }
     }
 
     play = (e)=>{
@@ -330,9 +337,7 @@ class Room extends React.Component{
         }else{
             return(
                 <React.Fragment>
-                    <br></br>
-                    <h1>Connection Lost</h1>
-                    <p>Please return to lobby to create or join game rooms.</p>
+                    <Redirect to= '/lobby'/>
                 </React.Fragment>
             );
         }

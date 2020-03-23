@@ -69,6 +69,7 @@ client.connect(function (err){
             db.collection(id.toString()).find({}, {projection: {_id: 0}}).toArray((err, result)=> {
                 if (err) throw err;
                 io.in(id.toString()).emit('getPlayers', result);
+                io.sockets.emit('clear', data.name);
             }); 
         }); 
     }
@@ -113,5 +114,8 @@ client.connect(function (err){
             if (err) throw err;
             io.sockets.emit('rankings', result);
         });
+    }
+    module.exports.clearOut = (io) => {
+        io.sockets.emit('clearID');
     }
 });

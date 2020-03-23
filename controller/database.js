@@ -11,7 +11,11 @@ module.exports.insertRoom = (data, io) => {
     mongoData.addRoom(data, io);
 }
 module.exports.updateRoom = (id, len, io) => {
-    RoomLists[id].occupancy = len;
+    if(RoomLists[id]){
+        RoomLists[id].occupancy = len;
+    }else{
+        mongoData.clearOut(io);
+    }
     //base case: a room must have at least 1 occupant in order for others to join
     var target = {roomid: parseInt(id)};
     var updater = {$set: {occupancy: io.nsps['/'].adapter.rooms[id.toString()].length}};

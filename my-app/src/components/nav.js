@@ -32,6 +32,7 @@ class nav extends React.Component{
     render(){
         function logout(){
             sessionStorage.removeItem('user');
+            sessionStorage.removeItem('roomID');
             window.location.reload();
         }
         var user = sessionStorage.getItem('user');
