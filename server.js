@@ -9,7 +9,6 @@ const io = require("socket.io")(http);
 const socketHandler = require('./sockets/socketHandler');
 const path = require('path');
 const user = require('./routes/user');
-const cardTheme = require('./routes/theme');
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -32,7 +31,6 @@ app.use(passport.session());
 
 //user login/signup actions
 app.use(user);
-app.use(cardTheme);
 //lobby, game and socket actions
 io.on('connection', (socket) =>{ 
 	console.log("New client connected " + socket.id);
