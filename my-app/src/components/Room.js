@@ -42,6 +42,10 @@ class Room extends React.Component{
     componentDidMount() {
         this._isMounted = true;
         if (this._isMounted) {
+            socket.socketClient().on('getTheme', (theme)=>{
+                //console.log(theme)
+                this.setState({theme: theme});
+            });
             socket.socketClient().on('rotate', ()=>{
                 //console.log('inside ROTATE');
                 //console.log(this.state)

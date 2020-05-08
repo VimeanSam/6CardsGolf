@@ -35,6 +35,7 @@ module.exports.updateRoom = (id, len, io) => {
         rooms.push(RoomLists[keys])
     }
     io.sockets.emit('listRooms', rooms);
+    io.in(id.toString()).emit('getTheme', RoomLists[id].cardTheme);
 }
 module.exports.clearRoomID = (id, io) => {
     io.sockets.emit('clearID', id);
