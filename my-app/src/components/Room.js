@@ -42,16 +42,11 @@ class Room extends React.Component{
     componentDidMount() {
         this._isMounted = true;
         if (this._isMounted) {
-            axios.post('/theme', {
-                roomID: sessionStorage.getItem('roomID')
-            })
-            .then(response => {
-                if(response.status == 200){
-                    this.setState({theme: response.data[0].cardTheme});
-                }
-            }).catch(error => {       
-                console.log(error);    
-            })
+            socket.socketClient().on('rotate', ()=>{
+                //console.log('inside ROTATE');
+                //console.log(this.state)
+                this.setState({activeSocket: ''})
+            });
             socket.socketClient().on('getPlayers', (players) =>{
                 this.setState({players: players});
             });
@@ -60,6 +55,7 @@ class Room extends React.Component{
             });
             socket.socketClient().on('enableMove', (socketID) => {
                 this.setState({activeSocket: socketID, drawTurn: true});
+                //console.log('activeSocket '+socketID);
             });
             socket.socketClient().on('drawedPile', (card) => {
                 this.setState({burntPile: card});
@@ -105,7 +101,6 @@ class Room extends React.Component{
             socket.socketClient().on('clearID', (id) =>{
                 var roomID = sessionStorage.getItem('roomID');
                 if(roomID === id){
-                    alert('remove '+id);
                     sessionStorage.removeItem('roomID');
                     window.location.href='/lobby';
                 }
@@ -131,6 +126,7 @@ class Room extends React.Component{
 
     play = (e)=>{
         let temp = e.target.id;
+        //console.log(this.state)
         if(this.state.firstRound){
             if(this.state.flipCounter <= 2 && temp !== this.state.tracker){
                 this.setState({flipCounter: this.state.flipCounter+1});
@@ -170,6 +166,9 @@ class Room extends React.Component{
             }
         }
         if(this.state.endgame){
+            //console.log('selected '+ this.state.selected);
+            //console.log('drawturn '+this.state.drawTurn);
+           // console.log(this.state)
             if(this.state.selected !== '' && this.state.drawTurn){
                 socket.socketClient().emit('swapCard', e.target.id, this.state.selected);
                 socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
@@ -179,17 +178,11 @@ class Room extends React.Component{
                     draw: false,
                     selected: ''
                 });
-                socket.socketClient().on('rotate', ()=>{
-                    this.setState({activeSocket: ''});
-                });
             }
             if(!this.state.drawTurn){
                 if(!this.state.gameOver){
                     socket.socketClient().emit('flipCard', e.target.id);
                     socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
-                    socket.socketClient().on('rotate', ()=>{
-                        this.setState({activeSocket: ''});
-                    });
                 }
             }
         }

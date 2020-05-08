@@ -6,27 +6,38 @@ var game = require('../gameLogic/game');
 //shuffle game deck
 var deck = game.shufflePack(game.getDeck());
 
+module.exports.ranking = (io) => {
+    mongoData.listRanks(io);
+}
+module.exports.listRoom = (io) => {
+    let rooms = [];
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    io.sockets.emit('listRooms', rooms);
+}
 module.exports.insertRoom = (data, io) => {
+    let rooms = [];
     RoomLists[data.roomid] = data;
-    mongoData.addRoom(data, io);
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.updateRoom = (id, len, io) => {
     if(RoomLists[id]){
         RoomLists[id].occupancy = len;
     }else{
-        mongoData.clearOut(id, io);
+        io.sockets.emit('clearID', id);
     }
-    //base case: a room must have at least 1 occupant in order for others to join
-    var target = {roomid: parseInt(id)};
-    var updater = {$set: {occupancy: io.nsps['/'].adapter.rooms[id.toString()].length}};
-    mongoData.updateRoom(target, updater, io);
-}
-module.exports.deleteRoom = (id, io) => {
-    var target = {roomid: parseInt(id)};
-    mongoData.deleteRoom(target, io);
+    let rooms = [];
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.clearRoomID = (id, io) => {
-    mongoData.clearOut(id, io);
+    io.sockets.emit('clearID', id);
 }
 module.exports.insertPlayer = (id, socketID, name, io) => {
     const pack = game.shufflePack(gameRooms[id].deck.slice());
@@ -34,45 +45,75 @@ module.exports.insertPlayer = (id, socketID, name, io) => {
     var data = {id: socketID, name: name, hand: playerHand, cards: ['x', 'x', 'x', 'x', 'x', 'x'], roomKey: id, score: 0};
     players[socketID] = data;
     gameRooms[id].deck = pack;
-    mongoData.addSessions(id, {id: socketID, name: name, cards: ['x', 'x', 'x', 'x', 'x', 'x'], roomKey: id, score: 0}, io);
+    
+    let currentRoomPlayers = [];
+    for(var key in players){
+        if(players[key].roomKey == id){
+            currentRoomPlayers.push(players[key]);
+        }
+    }
+    //console.log(currentRoomPlayers);
+    io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
 }
 module.exports.rematchSession = (roomID, io) => {
     const pack = game.shufflePack(deck.slice());
     gameRooms[roomID].turnIndex = 0;
     gameRooms[roomID].playersDone = 0;
     gameRooms[roomID].winners = '';
+    let currentRoomPlayers = [];
     for (var key in players) {
         if (players.hasOwnProperty(key)) {
             if(players[key].roomKey === roomID){
                 players[key].hand = game.draw(pack, 6, '', true);
                 players[key].cards = ['x', 'x', 'x', 'x', 'x', 'x'];
-                mongoData.updatePlayerDeck(roomID, {id: players[key].id}, {$set: {cards: ['x', 'x', 'x', 'x', 'x', 'x'], score: 0}}, io);
+                players[key].score = 0;
+                currentRoomPlayers.push(players[key]);
             }
         }
     }
+    //console.log(currentRoomPlayers);
+    io.in(roomID.toString()).emit('getPlayers', currentRoomPlayers);
     gameRooms[roomID].deck = pack;
-    var target = {roomid: parseInt(roomID)};
-    var updater = {$set: {playersDone: 0}};
-    mongoData.updateRoom(target, updater, io);
+    RoomLists[roomID].playersDone = 0;
+    let rooms = [];
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.updatePlayerSession = (id, socketId, pack, hand, point, io) => {
     players[socketId].cards = pack;
     players[socketId].hand = hand;
     players[socketId].score = point;
-    var target = {id: socketId};
-    var updater = {$set: {cards: players[socketId].cards, score: point}};
-    mongoData.updatePlayerDeck(id, target, updater, io);
+
+    let currentRoomPlayers = [];
+    for(var key in players){
+        if(players[key].roomKey == id){
+            currentRoomPlayers.push(players[key]);
+        }
+    }
+    //console.log(currentRoomPlayers);
+    io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
 }
-module.exports.deletePlayer = (socketID) => {
+module.exports.deletePlayer = (socketID, name, id, io) => {
     delete players[socketID];
+    let currentRoomPlayers = [];
+    for(var key in players){
+        if(players[key].roomKey == id){
+            currentRoomPlayers.push(players[key]);
+        }
+    }
+    //console.log(currentRoomPlayers);
+    io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
+    io.sockets.emit('clear', name);
 }
-module.exports.deleteCollection = (id) => {
+module.exports.deleteCollection = (id, io) => {
     delete RoomLists[id];
-    mongoData.dropSession(id);
-}
-module.exports.removeDocument = (id, name, io) => {
-    var playerRemoved = {name: name};
-    mongoData.removePlayersFromSessions(id, playerRemoved, io);
+    let rooms = [];
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.insertGame = (id) => {
     if(gameRooms[id] === undefined){
@@ -84,13 +125,27 @@ module.exports.updateRoomDeck = (id, pack) => {
 }
 module.exports.updateTurnIndex = (id, idx, io) => {
     gameRooms[id].turnIndex = idx;
-    mongoData.getTurn(id, idx, io);
+    let currentRoomPlayers = [];
+    for(var key in players){
+        if(players[key].roomKey == id){
+            currentRoomPlayers.push(players[key]);
+        }
+    }
+    if(currentRoomPlayers.length > 1){
+        io.to(`${currentRoomPlayers[idx].id}`).emit('enableMove', currentRoomPlayers[idx].id);
+        //console.log(currentRoomPlayers[idx].name+`'s turn`)
+    }
 }
 module.exports.updatePlayersDone = (id, amt, io) => {
+    //console.log('amt: '+amt)
     gameRooms[id].playersDone = amt;
-    var target = {roomid: parseInt(id)};
-    var updater = {$set: {playersDone: amt}};
-    mongoData.updateRoom(target, updater, io);
+    RoomLists[id].playersDone = amt;
+    let rooms = [];
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    //console.log(rooms)
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.updateRoomMessage = (id, messages) => {
     gameRooms[id].messages = [...gameRooms[id].messages, messages];

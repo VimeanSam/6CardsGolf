@@ -3,6 +3,14 @@ var sessions = database.getGameSessions();
 var players = database.getPlayers();
 var game = require('../gameLogic/game');
 
+module.exports.roomList = (io) => {
+    database.listRoom(io);
+}
+
+module.exports.rankList = (io) => {
+    database.ranking(io);
+}
+
 module.exports.createRoom = (socket, io) => {
     socket.on('createRoom', (name, id, creator, theme) =>{
         socket.join(id.toString());
@@ -183,8 +191,9 @@ module.exports.scanPlayerHands = (socket, io) =>{
                         nextTurn = 0;
                     }
                 }
-                database.updateTurnIndex(roomID, nextTurn, io);
+                //console.log('IN HERE');
                 io.in(roomID.toString()).emit('rotate');
+                database.updateTurnIndex(roomID, nextTurn, io);
             }
         }    
     });
@@ -238,13 +247,11 @@ module.exports.disconnect = (socket, io) => {
             database.updateRoomDeck(targetID, game.shufflePack(sessions[targetID].deck.concat(players[socket.id].hand)));
             io.in(targetID.toString()).emit('updateDeck', sessions[targetID].deck);
             if(!io.nsps['/'].adapter.rooms[targetID.toString()]){
-                database.deleteRoom(targetID, io);
-                database.deleteCollection(targetID);
-                database.deletePlayer(socket.id);
+                database.deleteCollection(targetID, io);
+                database.deletePlayer(socket.id, playerName, targetID, io);
             }else{
                 database.updateRoom(parseInt(targetID), io.nsps['/'].adapter.rooms[targetID.toString()].length, io);
-                database.removeDocument(parseInt(targetID), playerName, io);
-                database.deletePlayer(socket.id);
+                database.deletePlayer(socket.id, playerName, targetID, io);
                 if(sessions[targetID].turnIndex === disconnectedIndex){
                     if(disconnectedIndex === playerArr.length-1 || disconnectedIndex === 0){
                         database.updateTurnIndex(targetID, 0, io);

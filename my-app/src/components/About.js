@@ -11,9 +11,9 @@ class About extends React.Component{
                 <h5 > This is a web clone of 6 cards Golf. 
                   Node.js, Express, MongoDB, CSS, and React.js are the frameworks used to programmed this project. 
                   JavaScript libraries such as Bcrypt for passwords, axios for transfering client-server data, and socket.io for 
-                  real-time player actions. Supported browsers include Google Chrome and Firefox. 
+                  real-time player actions. Supported browsers include Google Chrome, Safari, Edge, and Firefox. 
                 </h5>
-                <h5 style={{color: 'red'}}>***Microsoft Edge seems to have problems running the game. In addition, 720p monitor users must zoom out a bit if players divs get too close to one another. </h5>
+                <h5 style={{color: 'red'}}>***720p monitor users must zoom out a bit if players divs get too close to one another. This website is not compatible with mobile</h5>
               </div>             
           </React.Fragment>
         );  

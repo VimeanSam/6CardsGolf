@@ -36,11 +36,12 @@ class Home extends React.Component{
     } 
 
     render(){
+      let user = sessionStorage.getItem('user');
         return(
           <React.Fragment>
               <br></br>
               <h1 id="greetings">Home</h1> 
-              <h5 style={{textAlign: 'center'}}>Please <a href="/login">Log in</a> to access game rooms <a href="/signup">Sign Up</a> to create an account</h5>
+              {user? <p></p> : <h5 style={{textAlign: 'center'}}>Please <a href="/login">Log in</a> to access game rooms <a href="/signup">Sign Up</a> to create an account</h5>}
               <h3 style={{textAlign: 'center'}}>Dashboard</h3>
               <div style={{padding: '25px', textAlign: 'center'}}>
                 <div className='row'>

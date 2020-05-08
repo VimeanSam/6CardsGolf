@@ -40,12 +40,13 @@ class nav extends React.Component{
             return(
                 <React.Fragment>
                     <Navbar collapseOnSelect expand="lg" bg="dark" variant="dark">
-                        <Navbar.Brand href="/lobby" exact="true"><img src={logo} alt="" width="30" height="30" className="d-inline-block align-top"/>
+                        <Navbar.Brand href="/" exact="true"><img src={logo} alt="" width="30" height="30" className="d-inline-block align-top"/>
                         {' 6 Cards Golf'}
                         </Navbar.Brand>
                         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
                         <Navbar.Collapse id="responsive-navbar-nav">
                             <Nav className="mr-auto">
+                                <Nav.Link  href="/" exact="true">Home</Nav.Link>
                                 <Nav.Link  href="/lobby" exact="true">Lobby</Nav.Link>
                                 <Nav.Link  href="/about">About</Nav.Link>
                                 <Nav.Link  href="/rules">How to Play</Nav.Link>
@@ -57,6 +58,7 @@ class nav extends React.Component{
                     </Navbar>
                     <BrowserRouter>
                         <Switch>
+                            <Route exact path="/" component={home} />
                             <Route path="/lobby" component={lobby} />
                             <Route path="/about" component={about} />
                             <Route path="/game" component={room} />
