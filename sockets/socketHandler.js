@@ -30,7 +30,7 @@ module.exports.joinRoom = (socket, io) =>{
         }
         if(!duplicate){
             socket.join(id.toString());
-            database.updateRoom(parseInt(id), io.nsps['/'].adapter.rooms[id.toString()].length, io);
+            database.updateRoom(id, io.nsps['/'].adapter.rooms[id.toString()].length, io);
         }
     });
 }
@@ -50,7 +50,8 @@ module.exports.playerJoined = (socket, io) =>{
                 database.insertGame(id);
                 database.insertPlayer(id, socket.id, name, io);
                 socket.join(id.toString());
-                database.updateRoom(parseInt(id), io.nsps['/'].adapter.rooms[id.toString()].length, io);
+                console.log(name+ ' joined');
+                database.updateRoom(id, io.nsps['/'].adapter.rooms[id.toString()].length, io);
                 io.in(id.toString()).emit('updateDeck', sessions[id].deck);
                 io.in(id.toString()).emit('messages', sessions[id].messages);
             }else{
@@ -63,7 +64,9 @@ module.exports.playerJoined = (socket, io) =>{
 
 module.exports.getTurn = (socket, io) =>{
     socket.on('getTurn', (id) =>{
-        database.updateTurnIndex(id, sessions[id].turnIndex, io);
+        if(sessions[id]){
+            database.updateTurnIndex(id, sessions[id].turnIndex, io);
+        }
     });
 }
 
@@ -207,7 +210,9 @@ module.exports.sendMessage = (socket, io) =>{
         let roomID = info.substring(bar+1, slash);
         let messageString = {from: username, message: body};
         database.updateRoomMessage(roomID, messageString);
-        io.in(roomID.toString()).emit('messages', sessions[roomID].messages);
+        if(sessions[roomID]){
+            io.in(roomID.toString()).emit('messages', sessions[roomID].messages);
+        }
     });
 }
 
@@ -231,6 +236,7 @@ module.exports.disconnect = (socket, io) => {
             var playerName = players[socket.id].name;
             var targetID = players[socket.id].roomKey;
             socket.leave(targetID.toString());
+            console.log(playerName+' disconnected');
             for (var key in players) {
                 if (players.hasOwnProperty(key)) {
                     if(players[key].roomKey === targetID){
@@ -250,7 +256,7 @@ module.exports.disconnect = (socket, io) => {
                 database.deleteCollection(targetID, io);
                 database.deletePlayer(socket.id, playerName, targetID, io);
             }else{
-                database.updateRoom(parseInt(targetID), io.nsps['/'].adapter.rooms[targetID.toString()].length, io);
+                database.updateRoom(targetID, io.nsps['/'].adapter.rooms[targetID.toString()].length, io);
                 database.deletePlayer(socket.id, playerName, targetID, io);
                 if(sessions[targetID].turnIndex === disconnectedIndex){
                     if(disconnectedIndex === playerArr.length-1 || disconnectedIndex === 0){

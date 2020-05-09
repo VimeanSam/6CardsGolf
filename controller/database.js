@@ -36,6 +36,14 @@ module.exports.updateRoom = (id, len, io) => {
     }
     io.sockets.emit('listRooms', rooms);
     io.in(id.toString()).emit('getTheme', RoomLists[id].cardTheme);
+    let currentRoomPlayers = [];
+    for(var key in players){
+        if(players[key].roomKey == id){
+            currentRoomPlayers.push(players[key]);
+        }
+    }
+    console.log(currentRoomPlayers);
+    io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
 }
 module.exports.clearRoomID = (id, io) => {
     io.sockets.emit('clearID', id);
@@ -53,7 +61,7 @@ module.exports.insertPlayer = (id, socketID, name, io) => {
             currentRoomPlayers.push(players[key]);
         }
     }
-    //console.log(currentRoomPlayers);
+    console.log(currentRoomPlayers);
     io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
 }
 module.exports.rematchSession = (roomID, io) => {
@@ -104,9 +112,10 @@ module.exports.deletePlayer = (socketID, name, id, io) => {
             currentRoomPlayers.push(players[key]);
         }
     }
-    //console.log(currentRoomPlayers);
+    console.log('deleted '+name);
+    console.log(currentRoomPlayers);
     io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
-    io.sockets.emit('clear', name);
+    io.in(id.toString()).emit('test', name);
 }
 module.exports.deleteCollection = (id, io) => {
     delete RoomLists[id];
@@ -134,7 +143,7 @@ module.exports.updateTurnIndex = (id, idx, io) => {
     }
     if(currentRoomPlayers.length > 1){
         io.to(`${currentRoomPlayers[idx].id}`).emit('enableMove', currentRoomPlayers[idx].id);
-        //console.log(currentRoomPlayers[idx].name+`'s turn`)
+        console.log(currentRoomPlayers[idx].name+`'s turn`);
     }
 }
 module.exports.updatePlayersDone = (id, amt, io) => {
@@ -149,7 +158,9 @@ module.exports.updatePlayersDone = (id, amt, io) => {
     io.sockets.emit('listRooms', rooms);
 }
 module.exports.updateRoomMessage = (id, messages) => {
-    gameRooms[id].messages = [...gameRooms[id].messages, messages];
+    if(gameRooms[id]){
+        gameRooms[id].messages = [...gameRooms[id].messages, messages];
+    }
 }
 module.exports.updatePlayerWins = (winners, id, io) => {
     gameRooms[id].winners = winners;
