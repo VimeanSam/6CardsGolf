@@ -42,7 +42,7 @@ module.exports.updateRoom = (id, len, io) => {
             currentRoomPlayers.push(players[key]);
         }
     }
-    console.log(currentRoomPlayers);
+    //console.log(currentRoomPlayers);
     io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
 }
 module.exports.clearRoomID = (id, io) => {
@@ -54,14 +54,15 @@ module.exports.insertPlayer = (id, socketID, name, io) => {
     var data = {id: socketID, name: name, hand: playerHand, cards: ['x', 'x', 'x', 'x', 'x', 'x'], roomKey: id, score: 0};
     players[socketID] = data;
     gameRooms[id].deck = pack;
-    
+    RoomLists[id].cardsLeft = gameRooms[id].deck.length;
+
     let currentRoomPlayers = [];
     for(var key in players){
         if(players[key].roomKey == id){
             currentRoomPlayers.push(players[key]);
         }
     }
-    console.log(currentRoomPlayers);
+    //console.log(currentRoomPlayers);
     io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
 }
 module.exports.rematchSession = (roomID, io) => {
@@ -83,6 +84,7 @@ module.exports.rematchSession = (roomID, io) => {
     //console.log(currentRoomPlayers);
     io.in(roomID.toString()).emit('getPlayers', currentRoomPlayers);
     gameRooms[roomID].deck = pack;
+    RoomLists[roomID].cardsLeft = gameRooms[roomID].deck.length;
     RoomLists[roomID].playersDone = 0;
     let rooms = [];
     for(var keys in RoomLists){
@@ -113,7 +115,7 @@ module.exports.deletePlayer = (socketID, name, id, io) => {
         }
     }
     console.log('deleted '+name);
-    console.log(currentRoomPlayers);
+    //console.log(currentRoomPlayers);
     io.in(id.toString()).emit('getPlayers', currentRoomPlayers);
     io.in(id.toString()).emit('test', name);
 }
@@ -130,8 +132,14 @@ module.exports.insertGame = (id) => {
         gameRooms[id] = {deck: deck, turnIndex: 0, playersDone: 0, messages: [], winners: ''};
     }
 }
-module.exports.updateRoomDeck = (id, pack) => {
+module.exports.updateRoomDeck = (id, pack, io) => {
     gameRooms[id].deck = pack;
+    RoomLists[id].cardsLeft = gameRooms[id].deck.length;
+    let rooms = [];
+    for(var keys in RoomLists){
+        rooms.push(RoomLists[keys])
+    }
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.updateTurnIndex = (id, idx, io) => {
     gameRooms[id].turnIndex = idx;

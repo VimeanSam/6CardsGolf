@@ -13,14 +13,25 @@ module.exports.rankList = (io) => {
 
 module.exports.createRoom = (socket, io) => {
     socket.on('createRoom', (name, id, creator, theme) =>{
-        socket.join(id.toString());
-        database.insertRoom({roomid: id, name: name, creator: creator, cardTheme: theme, playersDone: 0, occupancy: io.nsps['/'].adapter.rooms[id.toString()].length}, io);
+        let duplicate = false;
+        for (var key in players) {
+            if (players.hasOwnProperty(key)) {
+                if(players[key].name === creator){
+                    duplicate = true;
+                }
+            }
+        }
+        if(!duplicate){
+            socket.join(id.toString());
+            database.insertRoom({roomid: id, name: name, creator: creator, cardTheme: theme, cardsLeft: 108, playersDone: 0, occupancy: io.nsps['/'].adapter.rooms[id.toString()].length}, io);
+        }
     });
 }
 
 module.exports.joinRoom = (socket, io) =>{
     socket.on('joinRoom', (id, user) => {
         let duplicate = false;
+        let lowcard = false;
         for (var key in players) {
             if (players.hasOwnProperty(key)) {
                 if(players[key].name === user){
@@ -28,9 +39,16 @@ module.exports.joinRoom = (socket, io) =>{
                 }
             }
         }
+        if(sessions[id]){
+            if(sessions[id].deck.length < 6){
+                lowcard = true;
+            }
+        }
         if(!duplicate){
-            socket.join(id.toString());
-            database.updateRoom(id, io.nsps['/'].adapter.rooms[id.toString()].length, io);
+            if(!lowcard){
+                socket.join(id.toString());
+                database.updateRoom(id, io.nsps['/'].adapter.rooms[id.toString()].length, io);
+            }          
         }
     });
 }
@@ -38,6 +56,7 @@ module.exports.joinRoom = (socket, io) =>{
 module.exports.playerJoined = (socket, io) =>{
     socket.once('playerJoined', (name, id) =>{
         let duplicate = false;
+        let lowcard = false;
         for (var key in players) {
             if (players.hasOwnProperty(key)) {
                 if(players[key].name === name){
@@ -45,8 +64,13 @@ module.exports.playerJoined = (socket, io) =>{
                 }
             }
         }
+        if(sessions[id]){
+            if(sessions[id].deck.length < 6){
+                lowcard = true;
+            }
+        }
         if(!duplicate){
-            if(database.getRooms()[id]){
+            if(database.getRooms()[id] && !lowcard){
                 database.insertGame(id);
                 database.insertPlayer(id, socket.id, name, io);
                 socket.join(id.toString());
@@ -90,7 +114,7 @@ module.exports.nextTurn = (socket, io) =>{
 module.exports.drawCard = (socket, io) =>{
     socket.on('drawCard', (roomID, pack)=>{
         let burnedCard = game.draw(pack, 1, '', true);
-        database.updateRoomDeck(roomID, pack);
+        database.updateRoomDeck(roomID, pack, io);
         io.in(roomID.toString()).emit('updateDeck', pack);
         io.in(roomID.toString()).emit('drawedPile', burnedCard[0].toString());
     });
@@ -250,7 +274,7 @@ module.exports.disconnect = (socket, io) => {
                 database.updatePlayersDone(targetID, sessions[targetID].playersDone-1, io);
                 io.in(targetID.toString()).emit('playerDoneDisconnect', sessions[targetID].playersDone);              
             }
-            database.updateRoomDeck(targetID, game.shufflePack(sessions[targetID].deck.concat(players[socket.id].hand)));
+            database.updateRoomDeck(targetID, game.shufflePack(sessions[targetID].deck.concat(players[socket.id].hand)), io);
             io.in(targetID.toString()).emit('updateDeck', sessions[targetID].deck);
             if(!io.nsps['/'].adapter.rooms[targetID.toString()]){
                 database.deleteCollection(targetID, io);

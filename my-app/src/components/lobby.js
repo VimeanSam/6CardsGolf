@@ -96,7 +96,7 @@ class Lobby extends React.Component{
                         <h6 style={{paddingTop: '150px', paddingBottom: '150px', textAlign: 'center'}}>No games at the moment...</h6>
                         :
                         this.state.rooms.map((data) => 
-                          (data.occupancy < 4 && data.playersDone == 0)?
+                          (data.occupancy < 4 && data.playersDone == 0 && data.cardsLeft >= 6)?
                           <ListGroup.Item variant="success">
                             {data.name}
                             <p style={{textAlign: "right"}}>{data.occupancy}/4</p>
