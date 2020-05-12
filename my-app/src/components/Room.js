@@ -56,6 +56,9 @@ class Room extends React.Component{
             });
             socket.socketClient().on('updateDeck', (pack) =>{
                 this.setState({deck: pack});
+                if(pack.length < 1){
+                    this.setState({endgame: true});
+                }
             });
             socket.socketClient().on('enableMove', (socketID) => {
                 this.setState({activeSocket: socketID, drawTurn: true});
@@ -172,8 +175,9 @@ class Room extends React.Component{
         if(this.state.endgame){
             //console.log('selected '+ this.state.selected);
             //console.log('drawturn '+this.state.drawTurn);
-           // console.log(this.state)
+            //console.log(this.state)
             if(this.state.selected !== '' && this.state.drawTurn){
+                console.log('IN HERE')
                 socket.socketClient().emit('swapCard', e.target.id, this.state.selected);
                 socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
                 this.setState({
@@ -238,12 +242,9 @@ class Room extends React.Component{
 
     draw = (e)=>{
         this.setState({Drawclicked: this.state.Drawclicked+1})
-        if(this.state.Drawclicked < 2 && !this.state.gameOver){
+        if(this.state.Drawclicked < 2 && !this.state.gameOver && this.state.deck.length > 0){
             socket.socketClient().emit('drawCard', e.target.id, this.state.deck);
             this.setState({draw: true});
-        }
-        if(this.state.deck.length === 0){
-            this.setState({endgame: true});
         }
         e.preventDefault();
     }
