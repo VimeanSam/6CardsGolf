@@ -9,6 +9,7 @@ const io = require("socket.io")(http);
 const socketHandler = require('./sockets/socketHandler');
 const path = require('path');
 const user = require('./routes/user');
+const game = require('./routes/game');
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -32,6 +33,7 @@ app.use(passport.session());
 //user login/signup actions
 app.use(user);
 //lobby, game and socket actions
+app.use(game);
 io.on('connection', (socket) =>{ 
 	console.log("New client connected " + socket.id);
 	socketHandler.createRoom(socket, io);

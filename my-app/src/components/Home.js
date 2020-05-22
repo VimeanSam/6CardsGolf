@@ -1,6 +1,7 @@
 import React from 'react';
 import '../App.css';
 import {ListGroup} from "react-bootstrap";
+import axios from 'axios';
 import socket from '../socketControl/socketClient';
 
 class Home extends React.Component{
@@ -16,10 +17,11 @@ class Home extends React.Component{
     componentDidMount() {
       this._isMounted = true;
       if(this._isMounted) {
-        socket.socketClient().on('listRooms', (data) => {
-          this.setState({rooms: data});
+        socket.socketClient().on('listRooms', () => {
+          this.getRooms();
         }); 
         socket.socketClient().on('rankings', (data) => {
+          console.log(data)
           let limit = 0;
           if(data.length < 10){
             limit = data.length;
@@ -29,6 +31,17 @@ class Home extends React.Component{
           this.setState({ranks: data.slice(0, limit)});
         }); 
       }  
+    }
+
+    getRooms(){
+      axios.get('/getAllRooms')
+        .then((response) => {
+           //console.log(response.data);
+           this.setState({rooms: response.data.reverse()})
+      })
+        .catch(function (error) {
+            console.log(error);
+      });
     }
 
     componentWillUnmount() {

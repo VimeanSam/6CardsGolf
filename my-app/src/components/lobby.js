@@ -2,6 +2,7 @@ import React from 'react';
 import '../App.css';
 import { Button, FormGroup, ListGroup} from "react-bootstrap";
 import {Redirect} from 'react-router-dom';
+import axios from 'axios';
 import socket from '../socketControl/socketClient';
 
 class Lobby extends React.Component{
@@ -22,8 +23,8 @@ class Lobby extends React.Component{
     componentDidMount() {
       this._isMounted = true;
       if(this._isMounted) {
-        socket.socketClient().on('listRooms', (data) => {
-          this.setState({rooms: data});
+        socket.socketClient().on('listRooms', () => {
+          this.getRooms();
         }); 
       }  
     }
@@ -31,6 +32,17 @@ class Lobby extends React.Component{
     componentWillUnmount() {
       this._isMounted = false;
     } 
+
+    getRooms(){
+      axios.get('/getAllRooms')
+        .then((response) => {
+           //console.log(response.data);
+           this.setState({rooms: response.data.reverse()})
+      })
+        .catch(function (error) {
+            console.log(error);
+      });
+    }
 
     handleSubmit = (e) =>{
       this.setState({loading: true});

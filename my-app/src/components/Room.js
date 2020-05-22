@@ -44,17 +44,18 @@ class Room extends React.Component{
         if (this._isMounted) {
             socket.socketClient().on('getTheme', (theme)=>{
                 //console.log(theme)
-                this.setState({theme: theme});
+                this.getTheme();
             });
             socket.socketClient().on('rotate', ()=>{
                 //console.log('inside ROTATE');
                 //console.log(this.state)
                 this.setState({activeSocket: ''})
             });
-            socket.socketClient().on('getPlayers', (players) =>{
-                this.setState({players: players});
+            socket.socketClient().on('getPlayers', () =>{
+                this.getPlayers();
             });
             socket.socketClient().on('updateDeck', (pack) =>{
+                //console.log(pack.length)
                 this.setState({deck: pack});
                 if(pack.length < 1){
                     this.setState({endgame: true});
@@ -78,8 +79,8 @@ class Room extends React.Component{
                     this.setState({endgame: false});
                 }
             });
-            socket.socketClient().on('messages', (data) =>{
-                this.setState({messages: data});
+            socket.socketClient().on('messages', () =>{
+                this.getMessages();
             });
             socket.socketClient().on('gameOver', (status, winnerName) =>{
                 this.setState({
@@ -124,6 +125,52 @@ class Room extends React.Component{
         this._isMounted = false;
     } 
 
+    getPlayers(){
+        let rid = sessionStorage.getItem('roomID');
+        axios.get('/getPlayers', {
+            params: {
+                id: rid,
+            }
+        })
+        .then((response) => {
+            //console.log(response.data);
+            this.setState({players: response.data})
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    getTheme(){
+        let rid = sessionStorage.getItem('roomID');
+        axios.get('/getRoom', {
+            params: {
+                id: rid,
+            }
+        })
+        .then((response) => {
+            this.setState({theme: response.data[0].cardTheme});
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    getMessages(){
+        let rid = sessionStorage.getItem('roomID');
+        axios.get('/getRoom', {
+            params: {
+                id: rid,
+            }
+        })
+        .then((response) => {
+            this.setState({messages: response.data[0].messages});
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+
     scrollToBottom = () => {
         var roomID = sessionStorage.getItem('roomID');
         if(roomID){
@@ -137,7 +184,7 @@ class Room extends React.Component{
         if(this.state.firstRound){
             if(this.state.flipCounter <= 2 && temp !== this.state.tracker){
                 this.setState({flipCounter: this.state.flipCounter+1});
-                socket.socketClient().emit('flipCard', e.target.id);
+                socket.socketClient().emit('flipCard', e.target.id, this.state.players.length);
                 if(this.state.flipCounter === 2){
                     this.setState({cardflipped: true});
                 }
@@ -189,8 +236,8 @@ class Room extends React.Component{
             }
             if(!this.state.drawTurn){
                 if(!this.state.gameOver){
-                    socket.socketClient().emit('flipCard', e.target.id);
-                    socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
+                    socket.socketClient().emit('flipCard', e.target.id, this.state.players.length);
+                    //socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
                 }
             }
         }
@@ -229,7 +276,7 @@ class Room extends React.Component{
                 });
                 socket.socketClient().emit('nextTurn', e.target.id);
             }
-            if(this.state.endgame){
+            if((this.state.draw && this.state.endgame) || (this.state.deck.length === 0)){
                 this.setState({
                     selected: '',
                     drawTurn: false,
