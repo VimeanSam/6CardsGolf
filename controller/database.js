@@ -9,10 +9,11 @@ module.exports.ranking = async (io) => {
     let data = await Users.aggregate([{$sort: {wins: -1}}, {$project : { _id: 0, __v: 0 , email: 0, password: 0}}]);
     io.sockets.emit('rankings', data);
 }
-module.exports.listRoom = (io) => {
-    io.sockets.emit('listRooms');
+module.exports.listRoom = async (io) => {
+    let RoomLists = await Game.find({});
+    io.sockets.emit('listRooms', RoomLists);
 }
-module.exports.insertRoom = (data, io) => {
+module.exports.insertRoom = async (data, io) => {
     let pack = gameLogic.shufflePack(deck.slice());
     const newGame = new Game({
         roomid: data.roomid, 
@@ -31,7 +32,8 @@ module.exports.insertRoom = (data, io) => {
     newGame.save((err, savedGame) => {
         if (err) throw err;
     });
-    io.sockets.emit('listRooms');
+    let RoomLists = await Game.find({});
+    io.sockets.emit('listRooms', RoomLists);
 }
 module.exports.updateRoom = async (id, len, io) => {
     let RoomLists = await Game.find({roomid: id});
@@ -44,9 +46,11 @@ module.exports.updateRoom = async (id, len, io) => {
     }else{
         io.sockets.emit('clearID', id);
     }
-    io.sockets.emit('listRooms');
-    io.in(id.toString()).emit('getTheme');
-    io.in(id.toString()).emit('getPlayers');
+    let updatedRoom = await Game.find({});
+    let players = await ActivePlayers.find({roomKey: id});
+    io.sockets.emit('listRooms', updatedRoom);
+    io.in(id.toString()).emit('getTheme', RoomLists[0].cardTheme);
+    io.in(id.toString()).emit('getPlayers', players);
 }
 module.exports.clearRoomID = (id, io) => {
     io.sockets.emit('clearID', id);
@@ -66,7 +70,8 @@ module.exports.insertPlayer = async (id, socketID, name, io) => {
     Game.updateOne(target, updater, (err, data) =>{
         if(err) throw err;   
     });
-    io.in(id.toString()).emit('getPlayers');
+    let players = await ActivePlayers.find({roomKey: id});
+    io.in(id.toString()).emit('getPlayers', players);
     io.in(id.toString()).emit('updateDeck', pack);
     io.in(id.toString()).emit('messages', room[0].messages);
 }
@@ -86,8 +91,10 @@ module.exports.rematchSession = async (roomID, io) => {
     Game.updateOne(gameTarget, gameUpdater, (err, data) =>{
         if(err) throw err;   
     });
-    io.sockets.emit('listRooms');
-    io.in(roomID.toString()).emit('getPlayers');
+    let rooms = await Game.find({});
+    let updatedplayers = await ActivePlayers.find({roomKey: id});
+    io.sockets.emit('listRooms', rooms);
+    io.in(roomID.toString()).emit('getPlayers', updatedplayers);
     io.in(roomID.toString()).emit('updateDeck', pack);
     io.in(roomID.toString()).emit('gameOver', false, '');
     io.in(roomID.toString()).emit('drawedPile', 'mystery');
@@ -99,9 +106,10 @@ module.exports.updatePlayerSession = async (id, socketId, pack, hand, point, io)
     await ActivePlayers.updateOne(target, updater, (err, data) =>{
         if(err) throw err;   
     });
-    io.in(id.toString()).emit('getPlayers');
+    let players = await ActivePlayers.find({roomKey: id});
+    io.in(id.toString()).emit('getPlayers', players);
 }
-module.exports.deletePlayer = (socketID, name, id, io) => {
+module.exports.deletePlayer = async (socketID, name, id, io) => {
     let target = {id: socketID};
     ActivePlayers.deleteOne(target, (err) =>{
         if(err){
@@ -110,10 +118,11 @@ module.exports.deletePlayer = (socketID, name, id, io) => {
             console.log('deleted '+name);
         }
     });
-    io.in(id.toString()).emit('getPlayers');
+    let players = await ActivePlayers.find({roomKey: id});
+    io.in(id.toString()).emit('getPlayers', players);
     io.in(id.toString()).emit('test', name);
 }
-module.exports.deleteCollection = (id, io) => {
+module.exports.deleteCollection = async (id, io) => {
     let target = {roomid: id};
     Game.deleteOne(target, (err) =>{
         if(err){
@@ -122,7 +131,8 @@ module.exports.deleteCollection = (id, io) => {
             console.log("delete successfully");
         }
     });
-    io.sockets.emit('listRooms');
+    let rooms = await Game.find({});
+    io.sockets.emit('listRooms', rooms);
 }
 module.exports.updateRoomDeck = async (id, pack, io) => {
     //console.log('updateDecK: '+pack.length);
@@ -131,7 +141,8 @@ module.exports.updateRoomDeck = async (id, pack, io) => {
     await Game.updateOne(target, updater, (err, data) =>{
         if(err) throw err;   
     });
-    io.sockets.emit('listRooms');
+    let rooms = await Game.find({});
+    io.sockets.emit('listRooms', rooms);
     io.in(id.toString()).emit('updateDeck', pack);
 }
 module.exports.updateTurnIndex = async (id, idx, io) => {
@@ -148,7 +159,8 @@ module.exports.updateTurnIndex = async (id, idx, io) => {
         Game.updateOne(target, msg, (err, data) =>{
             if(err) throw err;   
         });
-        io.in(id.toString()).emit('messages');
+        let room = await Game.find({roomid: id});
+        io.in(id.toString()).emit('messages', room[0].messages);
     }
 }
 module.exports.updatePlayersDone = async (id, amt, io) => {
@@ -157,15 +169,17 @@ module.exports.updatePlayersDone = async (id, amt, io) => {
     await Game.updateOne(target, updater, (err, data) =>{
         if(err) throw err;   
     });
-    io.sockets.emit('listRooms');
+    let rooms = await Game.find({});
+    io.sockets.emit('listRooms', rooms);
 }
-module.exports.updateRoomMessage = (id, messages, io) => {
+module.exports.updateRoomMessage = async (id, messages, io) => {
     var target = {roomid: id};
     var updater = {$push: {messages: messages}};
     Game.updateOne(target, updater, (err, data) =>{
         if(err) throw err;   
     });
-    io.in(id.toString()).emit('messages');
+    let room = await Game.find({roomid: id});
+    io.in(id.toString()).emit('messages', room[0].messages);
 }
 module.exports.updatePlayerWins = (winners, id, io) => {
     var target = {roomid: id};

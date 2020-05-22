@@ -23,8 +23,8 @@ class Lobby extends React.Component{
     componentDidMount() {
       this._isMounted = true;
       if(this._isMounted) {
-        socket.socketClient().on('listRooms', () => {
-          this.getRooms();
+        socket.socketClient().on('listRooms', (data) => {
+          this.setState({rooms: data.reverse()});
         }); 
       }  
     }
@@ -32,17 +32,6 @@ class Lobby extends React.Component{
     componentWillUnmount() {
       this._isMounted = false;
     } 
-
-    getRooms(){
-      axios.get('/getAllRooms')
-        .then((response) => {
-           //console.log(response.data);
-           this.setState({rooms: response.data.reverse()})
-      })
-        .catch(function (error) {
-            console.log(error);
-      });
-    }
 
     handleSubmit = (e) =>{
       this.setState({loading: true});

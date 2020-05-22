@@ -44,15 +44,15 @@ class Room extends React.Component{
         if (this._isMounted) {
             socket.socketClient().on('getTheme', (theme)=>{
                 //console.log(theme)
-                this.getTheme();
+                this.setState({theme: theme});
             });
             socket.socketClient().on('rotate', ()=>{
                 //console.log('inside ROTATE');
                 //console.log(this.state)
                 this.setState({activeSocket: ''})
             });
-            socket.socketClient().on('getPlayers', () =>{
-                this.getPlayers();
+            socket.socketClient().on('getPlayers', (data) =>{
+                this.setState({players: data})
             });
             socket.socketClient().on('updateDeck', (pack) =>{
                 //console.log(pack.length)
@@ -79,8 +79,8 @@ class Room extends React.Component{
                     this.setState({endgame: false});
                 }
             });
-            socket.socketClient().on('messages', () =>{
-                this.getMessages();
+            socket.socketClient().on('messages', (msg) =>{
+                this.setState({messages: msg});
             });
             socket.socketClient().on('gameOver', (status, winnerName) =>{
                 this.setState({
@@ -124,52 +124,6 @@ class Room extends React.Component{
     componentWillUnmount() {
         this._isMounted = false;
     } 
-
-    getPlayers(){
-        let rid = sessionStorage.getItem('roomID');
-        axios.get('/getPlayers', {
-            params: {
-                id: rid,
-            }
-        })
-        .then((response) => {
-            //console.log(response.data);
-            this.setState({players: response.data})
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
-    }
-
-    getTheme(){
-        let rid = sessionStorage.getItem('roomID');
-        axios.get('/getRoom', {
-            params: {
-                id: rid,
-            }
-        })
-        .then((response) => {
-            this.setState({theme: response.data[0].cardTheme});
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
-    }
-
-    getMessages(){
-        let rid = sessionStorage.getItem('roomID');
-        axios.get('/getRoom', {
-            params: {
-                id: rid,
-            }
-        })
-        .then((response) => {
-            this.setState({messages: response.data[0].messages});
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
-    }
 
     scrollToBottom = () => {
         var roomID = sessionStorage.getItem('roomID');
