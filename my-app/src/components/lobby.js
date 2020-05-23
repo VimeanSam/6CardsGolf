@@ -2,7 +2,6 @@ import React from 'react';
 import '../App.css';
 import { Button, FormGroup, ListGroup} from "react-bootstrap";
 import {Redirect} from 'react-router-dom';
-import axios from 'axios';
 import socket from '../socketControl/socketClient';
 
 class Lobby extends React.Component{
@@ -24,7 +23,7 @@ class Lobby extends React.Component{
       this._isMounted = true;
       if(this._isMounted) {
         socket.socketClient().on('listRooms', (data) => {
-          this.setState({rooms: data.reverse()});
+          this.setState({rooms: data});
         }); 
       }  
     }

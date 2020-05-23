@@ -51,11 +51,10 @@ class Room extends React.Component{
                 //console.log(this.state)
                 this.setState({activeSocket: ''})
             });
-            socket.socketClient().on('getPlayers', (data) =>{
-                this.setState({players: data})
+            socket.socketClient().on('getPlayers', (players) =>{
+                this.setState({players: players});
             });
             socket.socketClient().on('updateDeck', (pack) =>{
-                //console.log(pack.length)
                 this.setState({deck: pack});
                 if(pack.length < 1){
                     this.setState({endgame: true});
@@ -79,8 +78,8 @@ class Room extends React.Component{
                     this.setState({endgame: false});
                 }
             });
-            socket.socketClient().on('messages', (msg) =>{
-                this.setState({messages: msg});
+            socket.socketClient().on('messages', (data) =>{
+                this.setState({messages: data});
             });
             socket.socketClient().on('gameOver', (status, winnerName) =>{
                 this.setState({
@@ -138,7 +137,7 @@ class Room extends React.Component{
         if(this.state.firstRound){
             if(this.state.flipCounter <= 2 && temp !== this.state.tracker){
                 this.setState({flipCounter: this.state.flipCounter+1});
-                socket.socketClient().emit('flipCard', e.target.id, this.state.players.length);
+                socket.socketClient().emit('flipCard', e.target.id);
                 if(this.state.flipCounter === 2){
                     this.setState({cardflipped: true});
                 }
@@ -190,8 +189,8 @@ class Room extends React.Component{
             }
             if(!this.state.drawTurn){
                 if(!this.state.gameOver){
-                    socket.socketClient().emit('flipCard', e.target.id, this.state.players.length);
-                    //socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
+                    socket.socketClient().emit('flipCard', e.target.id);
+                    socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
                 }
             }
         }
@@ -327,7 +326,7 @@ class Room extends React.Component{
                     <div class="footer">
                         <b style={{textAlign: "center"}}>Chat</b>
                         {this.state.messages.map(data =>
-                            <div><b style={{color: 'red'}}>{data.from}</b>: {data.message}</div>   
+                            <div><b style={{color: data.color}}>{data.from}</b>: {data.message}</div>   
                         )}
                         <div style={{ float:"left", clear: "both" }}ref={(el) => { this.messagesEnd = el; }}></div>
                     </div>
