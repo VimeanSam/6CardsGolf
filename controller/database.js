@@ -92,7 +92,7 @@ module.exports.rematchSession = async (roomID, io) => {
         if(err) throw err;   
     });
     let rooms = await Game.find({});
-    let updatedplayers = await ActivePlayers.find({roomKey: id});
+    let updatedplayers = await ActivePlayers.find({roomKey: roomID});
     io.sockets.emit('listRooms', rooms);
     io.in(roomID.toString()).emit('getPlayers', updatedplayers);
     io.in(roomID.toString()).emit('updateDeck', pack);
