@@ -2,7 +2,14 @@ import React from 'react';
 import '../App.css';
 import { Button, FormGroup, ListGroup} from "react-bootstrap";
 import {Redirect} from 'react-router-dom';
-import socket from '../socketControl/socketClient';
+import axios from 'axios';
+import io from 'socket.io-client';
+let url = 'http://localhost:3002/lobby';
+if(process.env.NODE_ENV === 'production'){
+  url = 'https://sixcardsgolf.herokuapp.com/lobby';
+}
+const socket = io.connect(url);
+//import socket from '../socketControl/socketClient';
 
 class Lobby extends React.Component{
     _isMounted = false;
@@ -22,9 +29,11 @@ class Lobby extends React.Component{
     componentDidMount() {
       this._isMounted = true;
       if(this._isMounted) {
-        socket.socketClient().on('listRooms', (data) => {
-          this.setState({rooms: data});
-        }); 
+        this.getRooms();
+        //console.log(socket)
+        socket.on('listRooms', () =>{
+            this.getRooms();
+        });
       }  
     }
 
@@ -34,24 +43,55 @@ class Lobby extends React.Component{
 
     handleSubmit = (e) =>{
       this.setState({loading: true});
-      let id = Date.now();
-      socket.socketClient().emit('createRoom', this.state.roomname, id, sessionStorage.getItem('user'), this.state.cardTheme); 
-      sessionStorage.setItem('roomID', id);
-      setTimeout(() => this.setState({userJoined: true}), 1000);
+      let id = Date.now().toString()+Math.random().toString(36).substr(2, 9);
+      axios.post('/createRoom' , {
+        roomid: id, name: this.state.roomname, creator: sessionStorage.getItem('user'), cardTheme: this.state.cardTheme
+      })
+      .then((response) =>{
+          console.log('success')
+          sessionStorage.setItem('roomID', id);
+          setTimeout(() => this.setState({userJoined: true}), 1000);
+      })
+      .catch((err) =>{
+        console.log(err);
+        alert('error creating room');
+        window.location.href = '/lobby'
+      })
       e.preventDefault();
     }
 
-    join = (e) =>{
+    join = async (e) =>{
       this.setState({loading: true});
-      sessionStorage.setItem('roomID', e.target.id);
-      setTimeout(() => this.setState({userJoined: true}), 1000);
-      socket.socketClient().emit('joinRoom', e.target.id, sessionStorage.getItem('user'));
+      let rid = e.target.id
+      try {
+        const response = await axios.post('/joinRoom' , {
+          roomid: rid, username: sessionStorage.getItem('user')
+        });
+        if(response.status === 200){
+          console.log('join success');
+          sessionStorage.setItem('roomID', rid);
+          setTimeout(() => this.setState({userJoined: true}), 1000);
+        }
+      } catch(error) {
+        console.log(error);
+        alert('error joining room');
+        window.location.href = '/lobby'
+      }
+    }
+
+    getRooms(){
+      axios.get('/getAllRooms')
+        .then((response = response.json()) => {
+           //console.log(response.data);
+            
+            this.setState({rooms: response.data.reverse()})
+      })
+        .catch(function (error) {
+            console.log(error);
+      });
     }
 
     render(){      
-        socket.socketClient().on('disconnect', () => {
-          sessionStorage.removeItem('roomID');
-        });  
         if(this.state.userJoined){
           return(
             <React.Fragment>

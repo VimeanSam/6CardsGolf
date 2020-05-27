@@ -1,7 +1,14 @@
 import React from 'react';
 import '../App.css';
 import {ListGroup} from "react-bootstrap";
-import socket from '../socketControl/socketClient';
+import axios from 'axios';
+import io from 'socket.io-client';
+let url = 'http://localhost:3002/lobby';
+if(process.env.NODE_ENV === 'production'){
+  url = 'https://sixcardsgolf.herokuapp.com/lobby';
+}
+const socket = io.connect(url);
+//import socket from '../socketControl/socketClient';
 
 class Home extends React.Component{
     _isMounted = false;
@@ -16,24 +23,43 @@ class Home extends React.Component{
     componentDidMount() {
       this._isMounted = true;
       if(this._isMounted) {
-        socket.socketClient().on('listRooms', (data) => {
-          this.setState({rooms: data});
-        }); 
-        socket.socketClient().on('rankings', (data) => {
-          let limit = 0;
-          if(data.length < 10){
-            limit = data.length;
-          }else{
-            limit = 10;
-          }
-          this.setState({ranks: data.slice(0, limit)});
-        }); 
+        this.getRooms();
+        this.getRanks();
+        socket.on('listRooms', () =>{
+          this.getRooms();
+        });
       }  
     }
 
     componentWillUnmount() {
       this._isMounted = false;
     } 
+
+    getRooms(){
+      axios.get('/getAllRooms')
+        .then((response = response.json()) => {
+            this.setState({rooms: response.data.reverse()})
+      })
+        .catch(function (error) {
+            console.log(error);
+      });
+    }
+
+    getRanks(){
+      axios.get('/ranks')
+        .then((response = response.json()) => {
+            let limit = 0;
+            if(response.data.length < 10){
+              limit = response.data.length;
+            }else{
+              limit = 10;
+            }
+            this.setState({ranks: response.data.slice(0, limit)});
+        })
+        .catch(function (error) {
+            console.log(error);
+      });
+    }
 
     render(){
       let user = sessionStorage.getItem('user');

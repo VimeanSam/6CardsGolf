@@ -1,7 +1,19 @@
 import React from 'react';
 import '../App.css';
-import socket from '../socketControl/socketClient';
+//import socket from '../socketControl/socketClient';
 import {Redirect} from 'react-router-dom';
+import io from 'socket.io-client';
+let url = 'http://localhost:3002/game';
+if(process.env.NODE_ENV === 'production'){
+  url = 'https://sixcardsgolf.herokuapp.com/game';
+}
+const socket = io.connect(url, {
+    forceNew: true,
+    reconnection: true,
+    reconnectionDelay: 500,
+    reconnectionAttempts: 10,
+    pintTimeout: 6000000000000000
+});
 const axios = require('axios');
 
 class Room extends React.Component{
@@ -29,7 +41,8 @@ class Room extends React.Component{
           winner: '',
           msg: '',
           messages: [],
-          theme: 'cards'
+          theme: 'cards',
+          socket: ''
         };
         this.play = this.play.bind(this);
         this.draw = this.draw.bind(this);
@@ -41,47 +54,56 @@ class Room extends React.Component{
     
     componentDidMount() {
         this._isMounted = true;
+        let rid = sessionStorage.getItem('roomID');
+        let user = sessionStorage.getItem('user');
         if (this._isMounted) {
-            socket.socketClient().on('getTheme', (theme)=>{
-                //console.log(theme)
-                this.setState({theme: theme});
-            });
-            socket.socketClient().on('rotate', ()=>{
-                //console.log('inside ROTATE');
+            socket.emit('join', rid, user);
+            socket.on('rotate', ()=>{
+                console.log('inside ROTATE');
                 //console.log(this.state)
                 this.setState({activeSocket: ''})
             });
-            socket.socketClient().on('getPlayers', (players) =>{
-                this.setState({players: players});
+            socket.on('updateInfo', () =>{
+                this.getRoomInfo();
+                this.getPlayers();
+                this.getMessages();
             });
-            socket.socketClient().on('updateDeck', (pack) =>{
+            socket.on('enableMove', (idx) =>{
+                let user = sessionStorage.getItem('user');
+                if(this.state.players[idx]){
+                    if(this.state.players[idx].name === user){
+                        this.setState({activeSocket: this.state.players[idx].id, drawTurn: true});
+                    }
+                }
+            });
+            socket.on('receivedMessage', () =>{
+                this.getMessages();
+            });
+            socket.on('playerDoneDisconnect', (amount) =>{
+                console.log(amount);
+                if(amount === 0){
+                    this.setState({endgame: false});
+                }
+            });
+            socket.on('updateDeck', (pack) =>{
                 this.setState({deck: pack});
                 if(pack.length < 1){
                     this.setState({endgame: true});
                 }
             });
-            socket.socketClient().on('enableMove', (socketID) => {
-                this.setState({activeSocket: socketID, drawTurn: true});
-                //console.log('activeSocket '+socketID);
+            socket.on('getPlayers', () =>{
+                this.getPlayers();
             });
-            socket.socketClient().on('drawedPile', (card) => {
+            socket.on('drawedPile', (card) => {
                 this.setState({burntPile: card});
             });
-            socket.socketClient().on('swap', (burnedCard) => {
+            socket.on('swap', (burnedCard) => {
                 this.setState({burntPile: burnedCard});
             });
-            socket.socketClient().on('endGame', (signal) =>{
+            socket.on('endGame', (signal) =>{
                 this.setState({endgame: signal});
             });
-            socket.socketClient().on('playerDoneDisconnect', (amount) =>{
-                if(amount === 0){
-                    this.setState({endgame: false});
-                }
-            });
-            socket.socketClient().on('messages', (data) =>{
-                this.setState({messages: data});
-            });
-            socket.socketClient().on('gameOver', (status, winnerName) =>{
+            socket.on('gameOver', (status, winnerName) =>{
                 this.setState({
                     gameOver: status,
                     selected: '',
@@ -92,7 +114,7 @@ class Room extends React.Component{
                     winner: winnerName
                 });
             });
-            socket.socketClient().on('reset', ()=>{
+            socket.on('reset', ()=>{
                 this.setState({
                     firstRound: true,
                     endgame: false,
@@ -105,13 +127,6 @@ class Room extends React.Component{
                     tracker: ''
                 });
             });
-            socket.socketClient().on('clearID', (id) =>{
-                var roomID = sessionStorage.getItem('roomID');
-                if(roomID === id){
-                    sessionStorage.removeItem('roomID');
-                    window.location.href='/lobby';
-                }
-            })
         }  
         this.scrollToBottom();
     }
@@ -123,6 +138,63 @@ class Room extends React.Component{
     componentWillUnmount() {
         this._isMounted = false;
     } 
+
+    getPlayers(){
+        let rid = sessionStorage.getItem('roomID');
+        axios.get('/getPlayers', {
+            params: {
+                id: rid,
+            }
+        })
+        .then((response = response.json()) => {
+            //console.log(response.data);
+            let user = sessionStorage.getItem('user');
+            let exist = response.data.filter(data => data.name === user);
+            if(exist.length < 1){
+                sessionStorage.removeItem('roomID');
+                window.location.href = '/lobby';
+            }
+            this.setState({players: response.data});
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    getRoomInfo(){
+        let rid = sessionStorage.getItem('roomID');
+        axios.get('/getRoom', {
+            params: {
+                id: rid,
+            }
+        })
+        .then((response = response.json()) => {
+            if(response.data[0].playersDone === 0){
+                this.setState({endgame: false});
+            }
+            this.setState({theme: response.data[0].cardTheme, deck: response.data[0].deck});
+            
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
+
+    getMessages(){
+        let rid = sessionStorage.getItem('roomID');
+        axios.get('/getMessages', {
+            params: {
+                id: rid,
+            }
+        })
+        .then((response = response.json()) => {
+            console.log(response.data[0].messages);
+            this.setState({messages: response.data[0].messages});
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    }
 
     scrollToBottom = () => {
         var roomID = sessionStorage.getItem('roomID');
@@ -137,15 +209,15 @@ class Room extends React.Component{
         if(this.state.firstRound){
             if(this.state.flipCounter <= 2 && temp !== this.state.tracker){
                 this.setState({flipCounter: this.state.flipCounter+1});
-                socket.socketClient().emit('flipCard', e.target.id);
+                socket.emit('flipCard', e.target.id);
                 if(this.state.flipCounter === 2){
                     this.setState({cardflipped: true});
                 }
                 this.setState({tracker: temp});
             }
             if(this.state.selected !== '' && this.state.selected !== 'mystery' && this.state.cardflipped && !this.state.endgame){
-                socket.socketClient().emit('swapCard', e.target.id, this.state.selected);
-                socket.socketClient().emit('nextTurn', e.target.id);
+                socket.emit('swapCard', e.target.id, this.state.selected);
+                socket.emit('nextTurn', e.target.id);
                 this.setState({
                     activeSocket: '',
                     drawTurn: false,
@@ -161,8 +233,8 @@ class Room extends React.Component{
         if(!this.state.firstRound && !this.state.endgame){
             this.setState({flipCounter: 1});
             if(this.state.selected !== ''){
-                socket.socketClient().emit('swapCard', e.target.id, this.state.selected);
-                socket.socketClient().emit('nextTurn', e.target.id);
+                socket.emit('swapCard', e.target.id, this.state.selected);
+                socket.emit('nextTurn', e.target.id);
                 this.setState({
                     drawTurn: false,
                     Drawclicked: 1,
@@ -178,8 +250,9 @@ class Room extends React.Component{
             //console.log(this.state)
             if(this.state.selected !== '' && this.state.drawTurn){
                 console.log('IN HERE')
-                socket.socketClient().emit('swapCard', e.target.id, this.state.selected);
-                socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
+                socket.emit('swapCard', e.target.id, this.state.selected);
+                socket.emit('scan', e.target.id);
+                //socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
                 this.setState({
                     drawTurn: false,
                     Drawclicked: 1,
@@ -189,8 +262,9 @@ class Room extends React.Component{
             }
             if(!this.state.drawTurn){
                 if(!this.state.gameOver){
-                    socket.socketClient().emit('flipCard', e.target.id);
-                    socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
+                    socket.emit('flipCard', e.target.id);
+                    //socket.emit('scan', e.target.id);
+                    //socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
                 }
             }
         }
@@ -215,7 +289,7 @@ class Room extends React.Component{
                         draw: false,
                         selected: ''
                     });
-                    socket.socketClient().emit('nextTurn', e.target.id);
+                    socket.emit('nextTurn', e.target.id);
                 }
             }
         }else{
@@ -227,7 +301,7 @@ class Room extends React.Component{
                     draw: false,
                     selected: ''
                 });
-                socket.socketClient().emit('nextTurn', e.target.id);
+                socket.emit('nextTurn', e.target.id);
             }
             if((this.state.draw && this.state.endgame) || (this.state.deck.length === 0)){
                 this.setState({
@@ -243,7 +317,7 @@ class Room extends React.Component{
     draw = (e)=>{
         this.setState({Drawclicked: this.state.Drawclicked+1})
         if(this.state.Drawclicked < 2 && !this.state.gameOver && this.state.deck.length > 0){
-            socket.socketClient().emit('drawCard', e.target.id, this.state.deck);
+            socket.emit('drawCard', e.target.id, this.state.deck);
             this.setState({draw: true});
         }
         e.preventDefault();
@@ -266,7 +340,7 @@ class Room extends React.Component{
     handleMessage = (e)=>{
         this.scrollToBottom();
         if(this.state.msg !== ''){
-            socket.socketClient().emit('sendMessage', e.target.id, this.state.msg);
+            socket.emit('onMessage', e.target.id, this.state.msg);
             this.setState({msg: ''});
             this.myFormRef.reset();
         }
@@ -274,18 +348,18 @@ class Room extends React.Component{
     }
 
     rematch = (e) =>{
-        socket.socketClient().emit('rematch', e.target.id);
+        socket.emit('rematch', e.target.id);
     }
 
     render(){
         var roomID = sessionStorage.getItem('roomID');
         var user = sessionStorage.getItem('user');
-        if(roomID !== undefined && roomID !== 'undefined' && roomID !== null){
-            socket.socketClient().emit('playerJoined', user, roomID);
+        if(roomID){
             if(this.state.start){
-                socket.socketClient().emit('getTurn', roomID);
+                socket.emit('getTurn', roomID);
                 this.setState({start: false});
             }
+           
             return(
                 <React.Fragment>
                     <br></br>
