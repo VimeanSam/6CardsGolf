@@ -59,9 +59,6 @@ io.of('/game').on('connection', (socket)=>{
 	socket.on('swapCard', (info, card) =>{
 		controller.swapCard(info, card, io);
 	});
-	socket.on('scan', (info) =>{
-		controller.check(info, io);
-	});
 	socket.on('rematch', (roomid) =>{
 		controller.rematch(roomid, io);
 	});

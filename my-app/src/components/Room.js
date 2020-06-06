@@ -251,7 +251,7 @@ class Room extends React.Component{
             if(this.state.selected !== '' && this.state.drawTurn){
                 console.log('IN HERE')
                 socket.emit('swapCard', e.target.id, this.state.selected);
-                socket.emit('scan', e.target.id);
+                //socket.emit('scan', e.target.id);
                 //socket.socketClient().emit('scanPlayerHands', e.target.id, this.state.players.length);
                 this.setState({
                     drawTurn: false,

@@ -147,7 +147,7 @@ module.exports.swapCard = async (info, card, io) => {
     let roomID = info.substring(bar+1, slash);
     let userID = info.substring(equal+1, bar);
     let player = await ActivePlayers.find({id: userID, roomKey: roomID});
-    let sessions = await Promise.resolve(Game.find({roomid: roomID}));
+    let session = await Promise.resolve(Game.find({roomid: roomID}));
     let hand = player[0].hand.slice();
     let deck = player[0].cards.slice();
     let cardidx = info[info.length-1];
@@ -162,46 +162,20 @@ module.exports.swapCard = async (info, card, io) => {
     });
     io.of('/game').to(roomID).emit('getPlayers'); 
     if(!deck.includes('x')){
-        let count = sessions[0].playersDone+1;
+        let count = session[0].playersDone+1;
         var targetRoom = {roomid: roomID};
         var updateAmt = {playersDone: count};
-        await Game.updateOne(targetRoom, updateAmt, (err, data) =>{
-            if(err) throw err;   
-        });
         io.of('/game').to(roomID).emit('endGame', true);
-        if(io.nsps['/game'].adapter.rooms[roomID.toString()].length == 1){
-            if(sessions[0].winners === ''){
-                io.of('/game').to(roomID).emit('gameOver', true, player[0].name); 
-                this.updatePlayerWins(player[0].name, io);
-            }        
-        }
-        io.of('/lobby').emit('listRooms');
-    }
-    io.of('/game').to(roomID).emit('swap', burnedCard); 
-}
-
-module.exports.check = async (info, io) =>{
-    let equal = info.toString().indexOf('=');
-    let bar = info.toString().indexOf('|');
-    let slash = info.toString().indexOf('/');
-    let uid = info.substring(equal+1, bar);
-    let rid = info.substring(bar+1, slash);
-    let scores = [];
-    var winners = [];
-    var winnerNames = '';
-    let players = await ActivePlayers.find({roomKey: rid});
-    let currentPlayer = await ActivePlayers.find({id: uid, roomKey: rid});
-    let session = await Game.find({roomid: rid});
-    console.log(currentPlayer[0].cards);
-    if(!game.deckScan(currentPlayer[0].cards)){
-        console.log('playersdone: '+session[0].playersDone);
-        console.log('totalplayers: '+session[0].occupancy);
-        if(session[0].playersDone === session[0].occupancy){
+        io.of('/lobby').emit('listRooms'); 
+        let players = await ActivePlayers.find({roomKey: roomID});
+        if(count === session[0].occupancy){
+            let scores = [];
             for (let i = 0; i < players.length; i++) {
                 scores = [...scores, players[i].score];
             }
             let minPoint = Math.min(...scores);
-            winners = await ActivePlayers.find({roomKey: rid, score: minPoint});
+            let winners = await ActivePlayers.find({roomKey: roomID, score: minPoint});
+            let winnerNames = '';
             for(var i = 0; i < winners.length; i++){
                 if(i === 0){
                     winnerNames = winners[i].name;
@@ -211,20 +185,20 @@ module.exports.check = async (info, io) =>{
             } 
             if(session[0].winners === ''){
                 console.log(winnerNames+' won');
-                io.of('/game').to(rid).emit('gameOver', true, winnerNames);
-                var targetRoom = {roomid: rid};
-                var update = {winners: winnerNames};
-                Game.updateOne(targetRoom, update, (err, data) =>{
-                    if(err) throw err;   
-                });
+                io.of('/game').to(roomID).emit('gameOver', true, winnerNames);
+                updateAmt.winners = winnerNames;
                 this.updatePlayerWins(winnerNames, io);
+                
             }
         }
-        if(session[0].playersDone < session[0].occupancy){
+        await Game.updateOne(targetRoom, updateAmt, (err, data) =>{
+            if(err) throw err;   
+        });
+        if(count < session[0].occupancy){
             let nextTurn = session[0].turnIndex+1;
             console.log(nextTurn);
-            if(nextTurn >= io.nsps['/game'].adapter.rooms[rid.toString()].length){
-                if(io.nsps['/game'].adapter.rooms[rid.toString()].length === 1){
+            if(nextTurn >= io.nsps['/game'].adapter.rooms[roomID.toString()].length){
+                if(io.nsps['/game'].adapter.rooms[roomID.toString()].length === 1){
                     nextTurn = 1;
                 }else{
                     nextTurn = 0;
@@ -232,10 +206,11 @@ module.exports.check = async (info, io) =>{
             }
             console.log(nextTurn);
             console.log('IN HERE');
-            io.of('/game').to(rid).emit('rotate');
-            this.updateTurnIndex(rid, nextTurn, io);
+            io.of('/game').to(roomID).emit('rotate');
+            this.updateTurnIndex(roomID, nextTurn, io);
         }
     }
+    io.of('/game').to(roomID).emit('swap', burnedCard); 
 }
 
 module.exports.updateTurnIndex = async (id, idx, io) =>{
