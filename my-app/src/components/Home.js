@@ -99,7 +99,7 @@ class Home extends React.Component{
                         <h5>Demo</h5>
                         <div className="wrapper">
                           <div className="iframe-container">
-                              <iframe src="https://drive.google.com/file/d/1A5taI10p2MCfoYYW_YLgf9qAD80zTQe1/preview" frameborder="0"></iframe>
+                          <iframe src="https://drive.google.com/file/d/1cNuvV2YWZ4NEMoILKHzjQosSzNtGfYuz/preview" allowfullscreen="true"></iframe>
                           </div>
                         </div>
                     </div>
