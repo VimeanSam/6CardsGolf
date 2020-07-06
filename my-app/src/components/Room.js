@@ -42,7 +42,8 @@ class Room extends React.Component{
           msg: '',
           messages: [],
           theme: 'cards',
-          socket: ''
+          socket: '',
+          turn: 0,
         };
         this.play = this.play.bind(this);
         this.draw = this.draw.bind(this);
@@ -99,6 +100,9 @@ class Room extends React.Component{
             });
             socket.on('swap', (burnedCard) => {
                 this.setState({burntPile: burnedCard});
+            });
+            socket.on('notifyTurn', () => {
+                this.getRoomInfo();
             });
             socket.on('endGame', (signal) =>{
                 this.setState({endgame: signal});
@@ -172,7 +176,7 @@ class Room extends React.Component{
             if(response.data[0].playersDone === 0){
                 this.setState({endgame: false});
             }
-            this.setState({theme: response.data[0].cardTheme, deck: response.data[0].deck});
+            this.setState({theme: response.data[0].cardTheme, deck: response.data[0].deck, turn: response.data[0].turnIndex});
             
         })
         .catch(function (error) {
@@ -188,7 +192,7 @@ class Room extends React.Component{
             }
         })
         .then((response = response.json()) => {
-            console.log(response.data[0].messages);
+            //console.log(response.data[0].messages);
             this.setState({messages: response.data[0].messages});
         })
         .catch(function (error) {
@@ -389,7 +393,7 @@ class Room extends React.Component{
                     </div> :        
                     <div className="disabled">
                         <div class="grid3x3">
-                            <p style={{textAlign: "center"}}>{data.name}</p>
+                            {playerIndex === this.state.turn? <p style={{textAlign: "center", color: 'gold', fontWeight: '600'}}>{data.name}</p> : <p style={{textAlign: "center"}}>{data.name}</p>}
                             {data.cards.map((card, index) =>
                             <div><img id={user+`|`+roomID+`/`+index} src={require(`../${this.state.theme}/${card}.png`)} width="70px" height="100px"></img></div>
                             )}

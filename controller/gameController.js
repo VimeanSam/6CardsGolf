@@ -217,14 +217,13 @@ module.exports.updateTurnIndex = async (id, idx, io) =>{
     let currentRoomPlayers = await ActivePlayers.find({roomKey: id});
     if(currentRoomPlayers.length > 1){
         var target = {roomid: id};
-        var messageString = {from: 'GAME_SERVER', message: `${currentRoomPlayers[idx].name}'s turn`, color: 'black'};
-        var updater = {turnIndex: idx, $push: {messages: messageString}};
+        var updater = {turnIndex: idx};
         Game.updateOne(target, updater, (err, data) =>{
             if(err) throw err;   
         });
         console.log(`${currentRoomPlayers[idx].name}'s turn`);
         io.of('/game').to(id).emit('enableMove', idx);
-        io.of('/game').to(id).emit('receivedMessage');
+        io.of('/game').to(id).emit('notifyTurn');
     }
 }
 
