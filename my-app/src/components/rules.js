@@ -16,7 +16,7 @@ class Rules extends React.Component{
                 </h5>
                 <h2 id="greetings">Technical functions</h2> 
                 <h5> 
-                  Players who wishes to play this web clone of 6 cards golf must sign up or log in if have an account in order to create a room for the game. Each room holds up to
+                  Players who wish to play this web clone of 6 cards golf must sign up or log in if have an account in order to create a room for the game. Each room holds up to
                   4 players max. Players cannot join a full room or a room that has a player with all their cards face-up. Therefore, a user must create a new room for separate game. A room must have 2 or more players for the game to start. Each players will
                   be granted a turn respectively based on the game state. If a player disconnect from the game, they will be removed from the game room
                   and if it is the disconnected player's turn, the next player will be granted a turn. Ex: 4 people in room, player 2's turn and disconnect happened, player 3 will be granted move.
@@ -27,7 +27,7 @@ class Rules extends React.Component{
                 </h5>
                 <h2 id="greetings">Scoring</h2> 
                 <h5> 
-                If a column contains card of the same rank, the column will be disregarded and players will be rewarded 0 points. Aces are worth 1 point, numbered cards 2-10 are worth their numerical value respectively.
+                If a column contains cards of the same rank, the column will be disregarded and players will be rewarded 0 points. Aces are worth 1 point, numbered cards 2-10 are worth their numerical value respectively.
                 Kings are worth 0 point, Jokers are -2 points, Jack and Queens are 10 points. If players have 2 columns next to each other with the same card ranks, they will be rewarded -20 points which almost guaranteed a victory.
                 However in a very rare occassion where all 6 of the player cards are of equal ranks, the player will be rewarded -30 points final score which cannot be beaten. 
                 </h5>
