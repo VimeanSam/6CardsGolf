@@ -22,76 +22,29 @@ class signup extends React.Component{
         this.handleSubmit = this.handleSubmit.bind(this);
     }
 
-    validateEmail = (email)=>{
-        var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        if(!re.test(email)){
-            this.setState({emailStatus: 'Email is not valid!'});
-        }
-        return re.test(email);
-    }   
-
-    validatePassword = (password)=>{
-        if(password.length < 7){
-            this.setState({passwordStatus: 'Password must be more than 7 characters!'});
-            return 'WEAK';
-        }
-        var matchedCase = [];
-        matchedCase.push("[$@$!%*#?&]"); // Special Charector
-        matchedCase.push("[A-Z]");      // Uppercase 
-        matchedCase.push("[0-9]");      // Numbers
-        matchedCase.push("[a-z]");     // Lowercase
-        var matched = 0;
-        var strength = '';
-        for (var i = 0; i < matchedCase.length; i++) {
-            if (new RegExp(matchedCase[i]).test(password)) {
-                matched++;
-            }
-        }
-        switch (matched) {
-            case 0:
-            case 1:
-            case 2:
-                strength = 'WEAK';
-                this.setState({passwordStatus: 'Password must contain uppercase, lowercase, and numbers or special characters'});
-                break;
-            case 3:
-                strength = 'MEDIUM';
-                break;
-            case 4:
-                strength = "STRONG";
-                break;
-        }
-        return strength;
-    }
-
     handleSubmit = (e) =>{
         if(this.state.password !== this.state.password_confirm){
             this.setState({password_confirmStatus: 'Password Must Match!'});
         }else{
             this.setState({userStatus: '', passwordStatus: '', password_confirmStatus: ''});
-            let emailValidation = this.validateEmail(this.state.email);
-            let password_strength = this.validatePassword(this.state.password);
-            //only unique username and email will be inserted into db
-            if(emailValidation && password_strength !== 'WEAK'){
-                axios.post('/signup', {
-                    username: this.state.username,
-                    email: this.state.email,
-                    password: this.state.password,
-                    unhashed: this.state.password
-                })
-                .then((response) => {
-                    if (!response.data.error) {
-                        this.setState({login: true});
-                        sessionStorage.setItem('user', this.state.username);
-                        window.location.reload();
-                    }else{
-                        this.setState({userStatus: response.data.error});
-                    }
-                })
-                .catch(function (error) {
-                    console.log(error);
-                }); 
-            }  
+            axios.post('/signup', {
+                username: this.state.username,
+                email: this.state.email,
+                password: this.state.password,
+                unhashed: this.state.password
+            })
+            .then((response) => {
+                if (!response.data.error) {
+                    this.setState({login: true});
+                    sessionStorage.setItem('user', this.state.username);
+                    window.location.reload();
+                }else{
+                    this.setState({userStatus: response.data.error});
+                }
+            })
+            .catch(function (error) {
+                console.log(error);
+            }); 
         }
         e.preventDefault();    
     }

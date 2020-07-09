@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Player = require('../models/player');
 const passport = require('../passportConfig');
+const validator = require('../utils/validation');
 
 router.post('/signup', (req, res) => {
     console.log('signup');
@@ -16,18 +17,36 @@ router.post('/signup', (req, res) => {
             });
         }
         else {
-            const newPlayer = new Player({
-                username: username,
-                email: email,
-                password: password,
-                _unhashedBackup: unhashed,
-                wins: 0
-            });
-            newPlayer.save((err, savedPlayer) => {
-                if (err) return res.json(err)
-                //console.log(savedPlayer)
-                res.json(savedPlayer)
-            });
+            let checkEmail = validator.validateEmail(email);
+            let checkPassword = validator.validatePassword(password);
+            if(checkEmail && checkPassword === ''){
+                const newPlayer = new Player({
+                    username: username,
+                    email: email,
+                    password: password,
+                    _unhashedBackup: unhashed,
+                    wins: 0
+                });
+                newPlayer.save((err, savedPlayer) => {
+                    if (err) return res.json(err)
+                    //console.log(savedPlayer)
+                    res.json(savedPlayer)
+                });
+            }else{
+                if(!checkEmail && checkPassword === ''){
+                    res.json({
+                        error: 'email is invalid. Please try again.'
+                    });
+                }else if(checkEmail && checkPassword !== ''){
+                    res.json({
+                        error: checkPassword
+                    });
+                }else{
+                    res.json({
+                        error: 'email and password are invalid. Please try again.'
+                    });
+                }
+            }
         }
     });
 })
