@@ -393,7 +393,7 @@ class Room extends React.Component{
                     </div> :        
                     <div className="disabled">
                         <div class="grid3x3">
-                            {playerIndex === this.state.turn? <p style={{textAlign: "center", color: 'gold', fontWeight: '600'}}>{data.name}</p> : <p style={{textAlign: "center"}}>{data.name}</p>}
+                            {playerIndex === this.state.turn && !this.state.gameOver? <p style={{textAlign: "center", color: 'gold', fontWeight: '600'}}>{data.name}</p> : <p style={{textAlign: "center"}}>{data.name}</p>}
                             {data.cards.map((card, index) =>
                             <div><img id={user+`|`+roomID+`/`+index} src={require(`../${this.state.theme}/${card}.png`)} width="70px" height="100px"></img></div>
                             )}
