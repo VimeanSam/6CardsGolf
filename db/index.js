@@ -6,7 +6,7 @@ mongoose.Promise = global.Promise;
 let uri = `${config["dev"].host}/${config["dev"].directory}` 
 
 if(process.env.NODE_ENV === 'production'){
-    uri = `${config["production"].credentials}/${config["production"].host}`  
+    uri = `${config["production"].credentials}@${config["production"].host}`  
 }
  
 mongoose.connect(uri).then(
