@@ -3,8 +3,12 @@ const config = require('../config/config');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const uri = process.env.MONGODB_URI || `${config.host}/${config.directory}` 
+let uri = `${config["dev"].host}/${config["dev"].directory}` 
 
+if(process.env.NODE_ENV === 'production'){
+    uri = `${config["production"].credentials}/${config["production"].host}`  
+}
+ 
 mongoose.connect(uri).then(
     () => { 
         console.log('Connected to Mongo');       
